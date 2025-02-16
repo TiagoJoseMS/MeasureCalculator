@@ -1,0 +1,12 @@
+[general]
+name=MeasureCalculator
+qgisMinimumVersion=3.0
+version=1.0
+author=Tiago José M Silva
+email=tiago.moraessilva@hotmail.com
+description=QGIS plugin for calculates area, perimeter, and length for selected features with automatic reprojection for accuracy.
+about=Calculates measures for selected features, reprojecting to UTM or Polyconic for precise results. Reports lengths and perimeters in kilometers (km) and areas in hectares (ha) by default, and also displays results in the project's configured measurement units. Optionally updates fields or creates a temporary layer.
+homepage=https://github.com/TiagoJoseMS/MeasureCalculator
+icon=icon.png
+category=Vector
+tags=area,perimeter,length,measurement,calculation,geometry,UTM,polyconic,projection,QGIS,plugin,geospatial
