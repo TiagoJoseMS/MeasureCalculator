@@ -1,6 +1,6 @@
 from qgis.PyQt.QtWidgets import QDialog, QVBoxLayout, QAction, QCheckBox, QLabel, QPushButton
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtCore import QLocale, QVariant, Qt
+from qgis.PyQt.QtCore import QLocale, QVariant, Qt, QMetaType, QT_VERSION_STR
 from qgis.core import (
     QgsProject, QgsWkbTypes, QgsField, QgsCoordinateTransform,
     QgsCoordinateReferenceSystem, QgsGeometry, QgsVectorLayer,
@@ -54,7 +54,7 @@ class MeasureCalculatorPlugin:
                 return
 
             self.dialog = CalculatorDialog(layer, self.iface)
-            self.dialog.exec_()
+            DialogExec(self.dialog)
 
         except Exception as e:
             self.show_message(self.tr("Error"), str(e), Qgis.Critical)
@@ -112,9 +112,9 @@ class CalculatorDialog(QDialog):
         layout = QVBoxLayout()
         
         self.lbl_results = QLabel()
-        self.lbl_results.setTextFormat(Qt.RichText)
+        self.lbl_results.setTextFormat(QtRichText)
         self.lbl_results.setWordWrap(True)
-        self.lbl_results.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.lbl_results.setTextInteractionFlags(QtTextSelectableByMouse)
         self.lbl_results.setStyleSheet("""
             QLabel {
                 border: 1px solid #cccccc;
@@ -357,7 +357,7 @@ class CalculatorDialog(QDialog):
                 raise Exception(
                     self.tr("Layer is already in edit mode!") + "\n" +
                     self.tr("Save or cancel edits before proceeding.")
-                )
+                )  # Fechamento do raise
 
             if not self.layer.startEditing():
                 raise Exception(self.tr("Layer is not editable!"))
@@ -368,9 +368,12 @@ class CalculatorDialog(QDialog):
             elif self.results['geom_type'] == QgsWkbTypes.LineGeometry:
                 fields = ['length_km']
 
+            # Adiciona campos e atualiza
             self.add_fields(fields)
+            self.layer.updateFields()  # Garante reconhecimento dos novos campos
             self.populate_fields(fields)
-            
+
+            # Commit das alterações
             if self.layer.commitChanges():
                 self.iface.messageBar().pushMessage(
                     self.tr("Success"),
@@ -395,15 +398,14 @@ class CalculatorDialog(QDialog):
         new_fields = []
         for field in fields:
             if field not in existing:
-                new_field = QgsField(field, QVariant.Double, 'double', 20, 4)
+                new_field = QgsField(field, QVariantDouble, 'double', 20, 4)
                 new_fields.append(new_field)
         
         if new_fields:
             if not provider.addAttributes(new_fields):
                 raise Exception(self.tr("Failed to add fields!"))
             
-            self.layer.updateFields()
-            provider.forceReload()
+            # self.layer.updateFields() # Moved to update_fields function
 
     def populate_fields(self, fields):
         try:
@@ -442,11 +444,11 @@ class CalculatorDialog(QDialog):
             
             if self.results['geom_type'] == QgsWkbTypes.PolygonGeometry:
                 original_fields.extend([
-                    QgsField("area_ha", QVariant.Double, 'double', 20, 4),
-                    QgsField("perim_km", QVariant.Double, 'double', 20, 4)
+                    QgsField("area_ha", QVariantDouble, 'double', 20, 4),
+                    QgsField("perim_km", QVariantDouble, 'double', 20, 4)
                 ])
             else:
-                original_fields.append(QgsField("length_km", QVariant.Double, 'double', 20, 4))
+                original_fields.append(QgsField("length_km", QVariantDouble, 'double', 20, 4))
 
             provider.addAttributes(original_fields)
             temp_layer.updateFields()
@@ -523,3 +525,15 @@ class CalculatorDialog(QDialog):
         if QLocale().name().startswith('pt'):
             return translations.get(text, text)
         return text
+
+# Compatibility check for Qt version
+if QT_VERSION_STR.startswith('5.'):
+    QVariantDouble = QVariant.Double
+    DialogExec = lambda dialog: dialog.exec_()
+    QtRichText = Qt.RichText
+    QtTextSelectableByMouse = Qt.TextSelectableByMouse
+else:
+    QVariantDouble = QMetaType.Type.Double
+    DialogExec = lambda dialog: dialog.exec()
+    QtRichText = Qt.TextFormat.RichText
+    QtTextSelectableByMouse = Qt.TextInteractionFlag.TextSelectableByMouse
