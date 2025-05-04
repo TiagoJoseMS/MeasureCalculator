@@ -1,6 +1,8 @@
 [general]
 name=MeasureCalculator
 qgisMinimumVersion=3.0
+qgisMaximumVersion=4.99
+supportsQt6=True
 version=2.0
 author=Tiago José M Silva
 email=tiago.moraessilva@hotmail.com
